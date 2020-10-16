@@ -46,7 +46,7 @@ The AttackBox can be installed on a wide array of hardware platforms, but we hav
 
 The AttackBox itself is built off of Kali Linux, and the process starts with installing Kali Linux on the device that will be used on the client site. The installation of Kali is outside of the scope of this README, but there are a couple of notes here:
 
-- When installing Kali make sure to encrypt the drive with a password. In future iterations there will be a process put in place to decrypt the drive on boot using a USB key, with the password as a fallback, but for now the password will be sent to the client for decrypting the drive on boot.
+- When installing Kali make sure to encrypt the drive with a password. Insert a USB drive and run scripts/usb_unlock_luks.sh to decrypt the drive on boot using a USB key, with the password as a fallback. Before the client mails the device back run scripts/kill_usb_unlock.sh to disable the USB boot key. Do not share the decrypt password with the client.
 
 - If you would like the ability to do X-Forwarding, make sure to install a desktop environment.
 
@@ -66,7 +66,8 @@ https://www.kali.org/news/raspberry-pi-4-and-kali/
 
 #### USB Key Creation
 
-Jon, fill this in when possible
+Insert a USB drive and run scripts/usb_unlock_luks.sh to decrypt the drive on boot using a USB key, with the password as a fallback. Before
+the client mails the device back run scripts/kill_usb_unlock.sh to disable the USB boot key. Do not share the decrypt password with the client.
 
 #### Public Server
 
@@ -86,15 +87,23 @@ And then entering the directory:
 
 `cd AttackBoxDev`
 
-**Public Server**
+**Public Server AutoSSH with HTTP/HTTPS C2 Setup**
 
 Before running this module, make sure to set up DNS for this IP; there is an automated Let's Encrypt certificate generation process as a part of this module.
 
 Once the repository is pulled down, to install the public server framework, run the following command:
 
-`sudo attackbox.py public`
+`sudo attackbox.py public -a`
 
 This module is interactive, and will pause execution before completing, while awaiting for the SSH configuration process is completed on the client side.  The client side module will generate and upload SSH keys to this public server, to allow for the reverse SSH connection to be able to be completed, and for the connection to be set to automatically heal.
+
+**Public Server OpenVPN Setup on UDP 1194 and fallback to TCP 443**
+
+This does not include the C2 component by default since there are two OpenVPN instances running, one of which is utilizing port 443.
+
+Once the repository is pulled down, to install the public server framework, run the following command:
+
+`sudo attackbox.py public -o`
 
 **Client Installation**
 
@@ -155,7 +164,9 @@ wifi_connect.py: A simple command line wireless interface, allowing for easy con
 
 wireless_control.py: A script to make it easy to set an interface into monitor mode, or set it back into managed mode, without dropping the whole Linux network stack, through a combination of nmcli and airmon.
 
-### Functionality
+There are also scripts to add VPN client certificates, revoke client certificates and create and remove USB decryption keys for a LUKS encrypted volume.
+
+### AutoSSH Functionality
 
 After the client script completes execution, and the public server script has been reactivated, and has completed execution, the next step is to test the connection.
 
@@ -173,11 +184,16 @@ After connection is established connect to the client machine through SSH using 
 
 If successful, a connection should open between the client machine and the public server, which will allow the user to control the client machine.
 
+###OpenVPN Functionality
+
+Copy the ovpn config to the client system at the following location: /etc/openvpn/client.conf
+Enable the connection on boot by running the following commands as root: `systemctl enable openvpn@client.service && systemctl daemon-reload && service openvpn@client start`
+
 ### Client Setup Instructions
 
 When the machine gets to the client site the client will need to complete the following steps currently:
 
-* Remove AttackBox, wireless dongles, wireless dongle bases, power supply and USB extension cables from the box
+* Remove AttackBox, wireless dongles, wireless dongle bases, power supply, USB flash drive, and USB extension cables from the box
 
 * If RedTeam has been engaged for wireless testing:
 
@@ -189,39 +205,13 @@ When the machine gets to the client site the client will need to complete the fo
 
 * Connect ethernet cable to the AttackBox
 
-* Connect screen to AttackBox with an HDMI cable
-
-* Connect keyboard to the AttackBox
-
 * Connect the power supply to the AttackBox
+
+* Connect the USB flash drive to the AttackBox
 
 * Turn AttackBox on and allow it to boot
 
-* When asked, input the password for your AttackBox into the prompt to decrypt the hard drive
-    Password: [put password here]
-
-* Disconnect screen and keyboard, if you would like. The AttackBox will complete the booting process and initiate a reverse SSH connection out to a server configured for this engagement. Testing will occur through this server.
+* The AttackBox will complete the booting process and initiate a reverse SSH connection or openvpn connection out to a server configured for this engagement. Testing will occur through this server.
 
 * Leave AttackBox running for the duration of the engagement
 
-Following implementation of the USB unlocking process the instructions will be simplified to the following:
-
-* Remove AttackBox, wireless dongles, wireless dongle bases, power supply, USB stick and USB extension cables from the box
-
-* If RedTeam has been engaged for wireless testing:
-
-  * Plug the USB wireless dongles onto the wireless dongle bases
-
-  * Connect the USB extension cables to the cable coming from the wireless dongle bases
-
-  * Connect USB extension cables to the AttackBox
-
-* Connect ethernet cable to the AttackBox
-
-* Connect USB stick to the AttackBox
-
-* Connect the power supply to the AttackBox
-
-* Turn AttackBox on and allow it to boot. The AttackBox will complete the booting process and initiate a reverse SSH connection out to a server configured for this engagement. Testing will occur through this server.
-
-* Leave AttackBox running for the duration of the engagement

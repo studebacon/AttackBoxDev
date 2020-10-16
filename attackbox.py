@@ -1,6 +1,7 @@
 import subprocess
 import sys,os
 import modules.publicserver as public
+import modules.openvpnserver as openvpn
 import modules.internal_pentest as internal
 import modules.wireless as wireless
 import modules.autossh as autossh
@@ -41,7 +42,10 @@ subs.required = True
 subs.dest = 'public or client or custom'
 
 
-public_parser = subs.add_parser('public', help='Installs and Configures Public C2 Server')
+public_parser = subs.add_parser('public', help='Installs and Configures Public Server')
+publicgroup = public_parser.add_mutually_exclusive_group()
+publicgroup.add_argument('-a', '--autossh', action='store_true', help="Install autossh and HTTP/HTTPS C2")
+publicgroup.add_argument('-o', '--openvpn', action='store_true', help="Install openvpn server with two listeners on 1194 UDP and 443 TCP")
 public_parser.set_defaults(mode='public')
 
 client_parser = subs.add_parser('client', help='Installs and Configures Specific Client System')
@@ -68,7 +72,10 @@ input("Press ENTER to Continue")
 print("\n")
 
 if args.mode == 'public':
-    public.server()
+    if args.autossh:
+        public.server()
+    elif args.openvpn:
+        openvpn.openvpn()
 elif args.mode == 'client':
     if args.all:
         update()

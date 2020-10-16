@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+
 lsblk
 
 echo "Enter USB Device (/dev/sda):"
@@ -27,10 +32,6 @@ echo ""
 cryptsetup luksKillSlot ${LUKS_DEVICE} 1
 
 
-#setup new luks key
-echo ""
-echo "Create new LUKS Slot 1 Key (requires Slot 0 passphrase)"
-echo ""
 rmdir /root/usbkey
 mkdir /root/usbkey
 mount ${USB_DEVICE}1 /root/usbkey
